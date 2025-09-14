@@ -154,7 +154,7 @@ int main() {
 
     fclose(fp);
 
-    printf("\n---- TOKEN COUNTS ----\n");
+    printf("\nTOKEN COUNTS\n");
     printf("Keywords: %d\n", kwCount);
     printf("Identifiers: %d\n", idCount);
     printf("Integers: %d\n", numCount);
