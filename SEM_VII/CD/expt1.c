@@ -1,137 +1,143 @@
-#include<stdio.h>
-#include<stdbool.h>
-#include<string.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
-bool isDelimiter(char c){
-    if(c==';'||c=='.'||c==','||c=='-'){
-        return (true);
-    }
-    return(false);
+int idCount = 0;
+int numCount = 0;
+int realCount = 0;
+int opCount = 0;
+int kwCount = 0;
+int invalidCount = 0;
+
+bool isDelimiter(char c) {
+    return (c == ';' || c == '.' || c == ',' || c == ' ' || c == '\t' || c == '\n');
 }
 
-bool isKeyword(char* str){
-    char* keywords[]={
+bool isKeyword(char* str) {
+    char* keywords[] = {
         "auto", "break", "case", "char", "const", "continue", "default", "do",
         "double", "else", "enum", "extern", "float", "for", "goto", "if", "int",
         "long", "register", "return", "short", "signed", "sizeof", "static",
         "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"
     };
 
-    int keywords_len=sizeof(keywords)/sizeof(keywords[0]);
-    for(int i=0;i<keywords_len;i++){
-        if(strcmp(str,keywords[i])==0){
-            return(true);
+    int keywords_len = sizeof(keywords) / sizeof(keywords[0]);
+    for (int i = 0; i < keywords_len; i++) {
+        if (strcmp(str, keywords[i]) == 0)
+            return true;
+    }
+    return false;
+}
+
+bool validIdentifier(char* str) {
+    if (!((str[0] >= 'a' && str[0] <= 'z') ||
+          (str[0] >= 'A' && str[0] <= 'Z') ||
+          str[0] == '_'))
+        return false;
+    for (int i = 1; str[i] != '\0'; i++) {
+        if (!((str[i] >= 'a' && str[i] <= 'z') ||
+              (str[i] >= 'A' && str[i] <= 'Z') ||
+              (str[i] >= '0' && str[i] <= '9') ||
+               str[i] == '_'))
+            return false;
+    }
+    return true;
+}
+
+bool isOperator(char ch) {
+    return (ch == '+' || ch == '-' || ch == '*' || ch == '/' ||
+            ch == '>' || ch == '<' || ch == '=');
+}
+
+bool isInteger(char* str) {
+    int len = strlen(str);
+    if (len == 0) return false;
+    for (int i = 0; i < len; i++) {
+        if (!(str[i] >= '0' && str[i] <= '9'))
+            return false;
+    }
+    return true;
+}
+
+bool isRealNumber(char* str) {
+    int len = strlen(str);
+    bool hasDecimal = false;
+    if (len == 0) return false;
+
+    for (int i = 0; i < len; i++) {
+        if (str[i] == '.') {
+            if (hasDecimal) return false; //has more than one dot
+            hasDecimal = true;
+        } else if (!(str[i] >= '0' && str[i] <= '9')) {
+            return false;
         }
     }
-    return(false);
+    return hasDecimal;
 }
 
-bool validIdentifier(char* str)
-{
-    if (str[0] == '0' || str[0] == '1' || str[0] == '2' ||
-        str[0] == '3' || str[0] == '4' || str[0] == '5' ||
-        str[0] == '6' || str[0] == '7' || str[0] == '8' ||
-        str[0] == '9' || isDelimiter(str[0])){
-        return (false);
-    }
-    return (true);
-}
-
-bool isOperator(char ch)
-{
-    if (ch == '+' || ch == '-' || ch == '*' ||ch == '/' || ch == '>' || ch == '<' ||ch == '='){
-        return (true);
-    }
-    return (false);
-}
-
-bool isInteger(char* str)
-{
-    int i,len=strlen(str);
-
-    if (len == 0)
-        return (false);
-    for (i=0;i<len;i++){
-        if (str[i] != '0' && str[i] != '1' && str[i] != '2'
-            && str[i] != '3' && str[i] != '4' && str[i] != '5'
-            && str[i] != '6' && str[i] != '7' && str[i] != '8'
-            && str[i] != '9' || (str[i] == '-' && i > 0))
-            return (false);
-    }
-    return (true);
-}
-
-bool isRealNumber(char* str)
-{
-    int i, len = strlen(str);
-    bool hasDecimal = false;
-
-    if (len == 0)
-        return (false);
-    for (i = 0; i < len; i++) {
-        if (str[i] != '0' && str[i] != '1' && str[i] != '2'
-            && str[i] != '3' && str[i] != '4' && str[i] != '5'
-            && str[i] != '6' && str[i] != '7' && str[i] != '8'
-            && str[i] != '9' && str[i] != '.' ||
-            (str[i] == '-' && i > 0))
-            return (false);
-        if (str[i] == '.')
-            hasDecimal = true;
-    }
-    return (hasDecimal);
-}
-
-
-char* subString(char* str, int left, int right)
-{
-    int i;
+char* subString(char* str, int left, int right) {
     char* subStr = (char*)malloc(sizeof(char) * (right - left + 2));
-
-    for (i = left; i <= right; i++)
+    for (int i = left; i <= right; i++)
         subStr[i - left] = str[i];
     subStr[right - left + 1] = '\0';
-    return (subStr);
+    return subStr;
 }
 
-void parse(char* str)
-{
+void parse(char* str) {
     int left = 0, right = 0;
     int len = strlen(str);
 
     while (right <= len && left <= right) {
-        if (isDelimiter(str[right]) == false)
+        if (!isDelimiter(str[right]) && !isOperator(str[right]))
             right++;
 
-        if (isDelimiter(str[right]) == true && left == right) {
-            if (isOperator(str[right]) == true)
+        // Single character operator or delimiter
+        if ((isDelimiter(str[right]) || isOperator(str[right])) && left == right) {
+            if (isOperator(str[right])) {
                 printf("'%c' IS AN OPERATOR\n", str[right]);
+                opCount++;
+            }
             right++;
-            left = right;
-        } else if (isDelimiter(str[right]) == true && left != right
-                   || (right == len && left != right)) {
-            char* subStr = subString(str, left, right - 1);
-
-            if (isKeyword(subStr) == true)
-                printf("'%s' IS A KEYWORD\n", subStr);
-
-            else if (isInteger(subStr) == true)
-                printf("'%s' IS AN INTEGER\n", subStr);
-
-            else if (isRealNumber(subStr) == true)
-                printf("'%s' IS A REAL NUMBER\n", subStr);
-
-            else if (validIdentifier(subStr) == true
-                     && isDelimiter(str[right - 1]) == false)
-                printf("'%s' IS A VALID IDENTIFIER\n", subStr);
-
-            else if (validIdentifier(subStr) == false
-                     && isDelimiter(str[right - 1]) == false)
-                printf("'%s' IS NOT A VALID IDENTIFIER\n", subStr);
             left = right;
         }
+
+        else if ((isDelimiter(str[right]) || isOperator(str[right])) && left != right || (right == len && left != right)) {
+
+            char* subStr = subString(str, left, right - 1);
+
+            if (isKeyword(subStr)) {
+                printf("'%s' IS A KEYWORD\n", subStr);
+                kwCount++;
+            }
+            else if (isInteger(subStr)) {
+                printf("'%s' IS AN INTEGER\n", subStr);
+                numCount++;
+            }
+            else if (isRealNumber(subStr)) {
+                printf("'%s' IS A REAL NUMBER\n", subStr);
+                realCount++;
+            }
+            else if (validIdentifier(subStr)) {
+                printf("'%s' IS A VALID IDENTIFIER\n", subStr);
+                idCount++;
+            }
+            else {
+                printf("'%s' IS NOT A VALID IDENTIFIER\n", subStr);
+                invalidCount++;
+            }
+            free(subStr);
+
+            if (isOperator(str[right])) {
+                printf("'%c' IS AN OPERATOR\n", str[right]);
+                opCount++;
+                right++;
+            }
+            left = right;
+        }
+        else
+            right++;
     }
-    return;
 }
 
 int main() {
@@ -141,15 +147,20 @@ int main() {
         return 1;
     }
 
-    char line[256];  // Buffer for each line
-
+    char line[256];
     while (fgets(line, sizeof(line), fp)) {
         parse(line);
     }
 
     fclose(fp);
+
+    printf("\n---- TOKEN COUNTS ----\n");
+    printf("Keywords: %d\n", kwCount);
+    printf("Identifiers: %d\n", idCount);
+    printf("Integers: %d\n", numCount);
+    printf("Real Numbers: %d\n", realCount);
+    printf("Operators: %d\n", opCount);
+    printf("Invalid Identifiers: %d\n", invalidCount);
+
     return 0;
 }
-
-
-
